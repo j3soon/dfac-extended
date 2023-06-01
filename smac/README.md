@@ -1,5 +1,7 @@
 ```diff
-- SMAC V1 - SMAC is now more streamlined requiring significantly less compute! See paper for details.
+- Please pay attention to the version of SC2 you are using for your experiments. 
+- Performance is *not* always comparable between versions. 
+- The results in SMAC (https://arxiv.org/abs/1902.04043) use SC2.4.6.2.69232 not SC2.4.10.
 ```
 
 # SMAC - StarCraft Multi-Agent Challenge
@@ -15,8 +17,7 @@ Together with SMAC we also release [PyMARL](https://github.com/oxwhirl/pymarl) -
 
 Should you have any question, please reach to [mikayel@samvelyan.com](mailto:mikayel@samvelyan.com) or [tabish.rashid@cs.ox.ac.uk](mailto:tabish.rashid@cs.ox.ac.uk).
 
-Data from the runs used in the paper is included [here](https://github.com/oxwhirl/smac/releases/download/v1/smac_run_data.json).
-
+Data from the runs used in the paper is included [here](https://github.com/oxwhirl/smac/releases/download/v1/smac_run_data.json). **These runs are <ins>outdated</ins> based on recent changes in StarCraft II. If you ran your experiments using the current version of SMAC, you mustn't compare your results with the ones provided here.**
 
 # Quick Start
 
@@ -25,14 +26,23 @@ Data from the runs used in the paper is included [here](https://github.com/oxwhi
 You can install SMAC by using the following command:
 
 ```shell
-$ pip install git+https://github.com/oxwhirl/smac.git
+pip install git+https://github.com/oxwhirl/smac.git
 ```
 
 Alternatively, you can clone the SMAC repository and then install `smac` with its dependencies:
 
 ```shell
-$ git clone https://github.com/oxwhirl/smac.git
-$ pip install smac/
+git clone https://github.com/oxwhirl/smac.git
+pip install -e smac/
+```
+
+*NOTE*: If you want to extend SMAC, please install the package as follows:
+
+```shell
+git clone https://github.com/oxwhirl/smac.git
+cd smac
+pip install -e ".[dev]"
+pre-commit install
 ```
 
 You may also need to upgrade pip: `pip install --upgrade pip` for the install to work.
@@ -60,26 +70,50 @@ Download the [SMAC Maps](https://github.com/oxwhirl/smac/releases/download/v0.1-
 To see the list of SMAC maps, together with the number of ally and enemy units and episode limit, run:
 
 ```shell
-$ python -m smac.bin.map_list 
+python -m smac.bin.map_list 
 ```
+
+### Creating new maps
+
+Users can extend SMAC by adding new maps/scenarios. To this end, one needs to:
+
+- Design a new map/scenario using StarCraft II Editor:
+  - Please take a close look at the existing maps to understand the basics that we use (e.g. Triggers, Units, etc),
+  - We make use of special RL units which never automatically start attacking the enemy. [Here](https://docs.google.com/document/d/1BfAM_AtZWBRhUiOBcMkb_uK4DAZW3CpvO79-vnEOKxA/edit?usp=sharing) is the step-by-step guide on how to create new RL units based on existing SC2 units,
+- Add the map information in [smac_maps.py](https://github.com/oxwhirl/smac/blob/master/smac/env/starcraft2/maps/smac_maps.py),
+- The newly designed RL units have new ids which need to be handled in [starcraft2.py](https://github.com/oxwhirl/smac/blob/master/smac/env/starcraft2/starcraft2.py). Specifically, for heterogenious maps containing more than one unit types, one needs to manually set the unit ids in the `_init_ally_unit_types()` function.
 
 ## Testing SMAC
 
 Please run the following command to make sure that `smac` and its maps are properly installed. 
 
 ```bash
-$ python -m smac.examples.random_agents
+python -m smac.examples.random_agents
 ```
 
-## Watch a replay
+## Saving and Watching StarCraft II Replays
 
-You can watch saved replays by running:
+### Saving a replay
+
+If you’ve using our [PyMARL](https://github.com/oxwhirl/pymarl) framework for multi-agent RL, here’s what needs to be done:
+1. **Saving models**: We run experiments on *Linux* servers with `save_model = True` (also `save_model_interval` is relevant) setting so that we have training checkpoints (parameters of neural networks) saved (click [here](https://github.com/oxwhirl/pymarl#saving-and-loading-learnt-models) for more details).
+2. **Loading models**: Learnt models can be loaded using the `checkpoint_path` parameter. If you run PyMARL on *MacOS* (or *Windows*) while also setting `save_replay=True`, this will save a .SC2Replay file for `test_nepisode` episodes on the test mode (no exploration) in the Replay directory of StarCraft II. (click [here](https://github.com/oxwhirl/pymarl#watching-starcraft-ii-replays) for more details).
+
+If you want to save replays without using PyMARL, simply call the `save_replay()` function of SMAC's StarCraft2Env in your training/testing code. This will save a replay of all epsidoes since the launch of the StarCraft II client.
+
+The easiest way to save and later watch a replay on Linux is to use [Wine](https://www.winehq.org/).
+
+### Watching a replay
+
+You can watch the saved replay directly within the StarCraft II client on MacOS/Windows by *clicking on the corresponding Replay file*.
+
+You can also watch saved replays by running:
 
 ```shell
-$ python -m pysc2.bin.play --norender --rgb_minimap_size 0 --replay <path-to-replay>
+python -m pysc2.bin.play --norender --replay <path-to-replay>
 ```
 
-This works for any replay as long as the map can be found by the game.
+This works for any replay as long as the map can be found by the game. 
 
 For more information, please refer to [PySC2](https://github.com/deepmind/pysc2) documentation.
 
@@ -107,11 +141,11 @@ In BibTeX format:
 }
 ```
 
-# Code Example
+# Code Examples
 
 Below is a small code example which illustrates how SMAC can be used. Here, individual agents execute random policies after receiving the observations and global state from the environment.  
 
-If you want to try the state-of-the-art algorithms (such as [QMIX](https://arxiv.org/abs/1803.11485) and [COMA](https://arxiv.org/abs/1705.08926)) on SMAC, make use of [PyMARL](https://github.com/oxwhirl/smac) - our framework for MARL research.
+If you want to try the state-of-the-art algorithms (such as [QMIX](https://arxiv.org/abs/1803.11485) and [COMA](https://arxiv.org/abs/1705.08926)) on SMAC, make use of [PyMARL](https://github.com/oxwhirl/pymarl) - our framework for MARL research.
 
 ```python
 from smac.env import StarCraft2Env
@@ -135,6 +169,7 @@ def main():
         while not terminated:
             obs = env.get_obs()
             state = env.get_state()
+            # env.render()  # Uncomment for rendering
 
             actions = []
             for agent_id in range(n_agents):
@@ -152,6 +187,11 @@ def main():
 
 ```
 
-# RLlib Examples
+## RLlib Examples
 
-You can also run SMAC environments in [RLlib](https://rllib.io), which includes scalable algorithms such as [PPO](https://ray.readthedocs.io/en/latest/rllib-algorithms.html#proximal-policy-optimization-ppo) and [IMPALA](https://ray.readthedocs.io/en/latest/rllib-algorithms.html#importance-weighted-actor-learner-architecture-impala). Check out the [example code](https://github.com/oxwhirl/smac/tree/master/smac/examples/rllib).
+You can also run SMAC environments in [RLlib](https://rllib.io), which includes scalable algorithms such as [PPO](https://ray.readthedocs.io/en/latest/rllib-algorithms.html#proximal-policy-optimization-ppo) and [IMPALA](https://ray.readthedocs.io/en/latest/rllib-algorithms.html#importance-weighted-actor-learner-architecture-impala). Check out the example code [here](https://github.com/oxwhirl/smac/tree/master/smac/examples/rllib).
+
+## PettingZoo Example
+
+Thanks to [Rodrigo de Lazcano](https://github.com/rodrigodelazcano), SMAC now supports [PettingZoo API](https://github.com/PettingZoo-Team/PettingZoo) and PyGame environment rendering. Check out the example code [here](https://github.com/oxwhirl/smac/tree/master/smac/examples/pettingzoo).
+

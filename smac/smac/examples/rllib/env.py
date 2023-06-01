@@ -2,6 +2,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import random
+
+import numpy as np
+
 from gym.spaces import Discrete, Box, Dict
 
 from ray import rllib
@@ -27,10 +31,14 @@ class RLlibStarCraft2Env(rllib.MultiAgentEnv):
 
         self._env = StarCraft2Env(**smac_args)
         self._ready_agents = []
-        self.observation_space = Dict({
-            "obs": Box(-1, 1, shape=(self._env.get_obs_size(),)),
-            "action_mask": Box(0, 1, shape=(self._env.get_total_actions(),)),
-        })
+        self.observation_space = Dict(
+            {
+                "obs": Box(-1, 1, shape=(self._env.get_obs_size(),)),
+                "action_mask": Box(
+                    0, 1, shape=(self._env.get_total_actions(),)
+                ),
+            }
+        )
         self.action_space = Discrete(self._env.get_total_actions())
 
     def reset(self):
@@ -44,7 +52,7 @@ class RLlibStarCraft2Env(rllib.MultiAgentEnv):
         return_obs = {}
         for i, obs in enumerate(obs_list):
             return_obs[i] = {
-                "action_mask": self._env.get_avail_agent_actions(i),
+                "action_mask": np.array(self._env.get_avail_agent_actions(i)),
                 "obs": obs,
             }
 
@@ -71,13 +79,16 @@ class RLlibStarCraft2Env(rllib.MultiAgentEnv):
         for i in self._ready_agents:
             if i not in action_dict:
                 raise ValueError(
-                    "You must supply an action for agent: {}".format(i))
+                    "You must supply an action for agent: {}".format(i)
+                )
             actions.append(action_dict[i])
 
         if len(actions) != len(self._ready_agents):
             raise ValueError(
                 "Unexpected number of actions: {}".format(
-                    action_dict, self._ready_agents))
+                    action_dict,
+                )
+            )
 
         rew, done, info = self._env.step(actions)
         obs_list = self._env.get_obs()
@@ -94,3 +105,11 @@ class RLlibStarCraft2Env(rllib.MultiAgentEnv):
 
         self._ready_agents = list(range(len(obs_list)))
         return return_obs, rews, dones, infos
+
+    def close(self):
+        """Close the environment"""
+        self._env.close()
+
+    def seed(self, seed):
+        random.seed(seed)
+        np.random.seed(seed)

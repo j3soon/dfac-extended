@@ -93,12 +93,13 @@ The complete list of challenges is presented bellow. The difficulty of the game 
 | bane_vs_bane | 20 Zerglings & 4 Banelings  | 20 Zerglings & 4 Banelings | micro-trick: positioning |
 | so_many_banelings| 7 Zealots  | 32 Banelings | micro-trick: positioning |
 | 2c_vs_64zg| 2 Colossi  | 64 Zerglings | micro-trick: positioning |
+| 1c3s5z | 1 Colossi & 3 Stalkers & 5 Zealots | 1 Colossi & 3 Stalkers & 5 Zealots | heterogeneous & symmetric |
 
 ### State and Observations
 
 At each timestep, agents receive local observations drawn within their field of view. This  encompasses information about the map within a circular area around each unit and with a radius equal to the _sight range_. The sight range makes the environment partially observable from the standpoint of each agent. Agents can only observe other agents if they are both alive and located within the sight range. Hence, there is no way for agents to determine whether their teammates are far away or dead.
 
-The feature vector observed by each agent contains the following attributes for both allied and enemy units within the sight range: _distance_, _relative x_, _relative y_, _health_, _shield_, and _unit\_type_.\footnote{_health_, _shield_ and _unit\_type_ of the unit the agent controls is also included in observations_. Shields serve as an additional source of protection that needs to be removed before any damage can be done to the health of units.
+The feature vector observed by each agent contains the following attributes for both allied and enemy units within the sight range: _distance_, _relative x_, _relative y_, _health_, _shield_, and _unit\_type_ <sup>[1](#myfootnote1)</sup>. Shields serve as an additional source of protection that needs to be removed before any damage can be done to the health of units.
 All Protos units have shields, which can regenerate if no new damage is dealt
 (units of the other two races do not have this attribute).
 In addition, agents have access to the last actions of allied units that are in the field of view. Lastly, agents can observe the terrain features surrounding them; particularly, the values of eight points at a fixed radius indicating height and walkability.
@@ -109,7 +110,7 @@ All features, both in the state as well as in the observations of individual age
 
 ### Action Space
 
-The discrete set of actions which agents are allowed to take consists of _move[direction]_ (four directions: north, south, east, or west._, _attack[enemy_id]_, _stop_ and _no-op_. Dead agents can only take _no-op_ action while live agents cannot.
+The discrete set of actions which agents are allowed to take consists of _move[direction]_ (four directions: north, south, east, or west), _attack[enemy_id]_, _stop_ and _no-op_. Dead agents can only take _no-op_ action while live agents cannot.
 As healer units, Medivacs must use _heal[agent\_id]_ actions instead of _attack[enemy\_id]_. The maximum number of actions an agent can take ranges between 7 and 70, depending on the scenario.
 
 To ensure decentralisation of the task, agents are restricted to use the _attack[enemy\_id]_ action only towards enemies in their _shooting range_.
@@ -134,3 +135,5 @@ Furthermore, to encourage agents to explore interesting micro-strategies themsel
 To do so, we make use of new units created with the StarCraft II Editor that are exact copies of existing units with two attributes modified: _Combat: Default Acquire Level_ is set to _Passive_ (default _Offensive_) and _Behaviour: Response_ is set to _No Response_ (default _Acquire_). These fields are only modified for allied units; enemy units are unchanged.
 
 The sight and shooting range values might differ from the built-in _sight_ or _range_ attribute of some StarCraft II units. Our goal is not to master the original full StarCraft game, but rather to benchmark MARL methods for decentralised control.
+
+<a name="myfootnote1">1</a>: _health_, _shield_ and _unit\_type_ of the unit the agent controls is also included in observations
