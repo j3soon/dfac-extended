@@ -310,6 +310,9 @@ class StarCraft2Env(MultiAgentEnv):
         self._sc2_proc = None
         self._controller = None
 
+        # Qatten
+        self.unit_dim = 4 + self.shield_bits_ally + self.unit_type_bits
+
         # Try to avoid leaking SC2 processes on shutdown
         atexit.register(lambda: self.close())
 
