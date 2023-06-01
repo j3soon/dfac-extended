@@ -34,7 +34,7 @@ class IQNRNNAgent(nn.Module):
         elif forward_type == "target":
             n_rnd_quantiles = self.n_target_quantiles
         else:
-            raise ValueError("Unknown forward_type")
+            raise ValueError("Unknown forward_type: " + forward_type)
         shape = h.shape
         batch_size = shape[0]
         h2 = h.reshape(batch_size, 1, self.args.rnn_hidden_dim).expand(-1, n_rnd_quantiles, -1).reshape(-1, self.args.rnn_hidden_dim)

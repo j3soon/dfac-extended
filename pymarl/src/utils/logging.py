@@ -1,5 +1,7 @@
 from collections import defaultdict
 import logging
+import json
+from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 
 class Logger:
@@ -13,10 +15,8 @@ class Logger:
         self.stats = defaultdict(lambda: [])
 
     def setup_tb(self, directory_name):
-        # Import here so it doesn't have to be installed if you don't use it
-        from tensorboard_logger import configure, log_value
-        configure(directory_name)
-        self.tb_logger = log_value
+        self.writer = SummaryWriter(directory_name)
+        self.tb_logger = self.writer.add_scalar
         self.use_tb = True
 
     def setup_sacred(self, sacred_run_dict):
@@ -37,18 +37,18 @@ class Logger:
                 self.sacred_info["{}_T".format(key)] = [t]
                 self.sacred_info[key] = [value]
 
+    def log_hp(self, config):
+        d = {}
+        for key in config.keys():
+            value = config[key]
+            if not isinstance(value, (bool, float, int, str)):
+                # Type is not supported by hparams
+                value = json.dumps(value)
+            d[key] = value
+        self.writer.add_hparams(d, {})
+
     def print_recent_stats(self):
-        log_str = "Recent Stats | t_env: {:>10} | Episode: {:>8}\n".format(*self.stats["episode"][-1])
-        i = 0
-        for (k, v) in sorted(self.stats.items()):
-            if k == "episode":
-                continue
-            i += 1
-            window = 5 if k != "epsilon" else 1
-            item = "{:.4f}".format(np.mean([x[1] for x in self.stats[k][-window:]]))
-            log_str += "{:<25}{:>8}".format(k + ":", item)
-            log_str += "\n" if i % 4 == 0 else "\t"
-        self.console_logger.info(log_str)
+        pass
 
 
 # set up a custom logger

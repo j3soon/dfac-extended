@@ -34,12 +34,13 @@ def run(_run, _config, _log):
     _log.info("\n\n" + experiment_params + "\n")
 
     # configure tensorboard logger
-    unique_token = "{}__{}".format(args.name, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    unique_token = "{}__{}".format(args.name, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S_%f"))
     args.unique_token = unique_token
     if args.use_tensorboard:
         tb_logs_direc = os.path.join(args.local_results_path, "tb_logs")
         tb_exp_direc = os.path.join(tb_logs_direc, "{}").format(unique_token)
         logger.setup_tb(tb_exp_direc)
+        logger.log_hp(_config)
 
     # sacred is on by default
     logger.setup_sacred(_run)
@@ -83,6 +84,7 @@ def run_sequential(args, logger):
     args.n_agents = env_info["n_agents"]
     args.n_actions = env_info["n_actions"]
     args.state_shape = env_info["state_shape"]
+    args.unit_dim = env_info["unit_dim"]
 
     # Default/Base scheme
     scheme = {

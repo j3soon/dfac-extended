@@ -44,10 +44,15 @@ RUN cd /root/sacred && python3 setup.py install
 RUN pip3 install torch
 RUN pip3 install torchvision snakeviz pytest probscale
 
+# Upgrade cmake for building pysc2 dependencies
+RUN apt-get remove cmake -y
+RUN pip3 install cmake --upgrade
 RUN pip3 install pysc2
 
 ## -- SMAC
 COPY smac /root/smac
+# Ref: https://stackoverflow.com/q/43124775
+RUN pip3 uninstall -y enum34
 RUN cd /root/smac && pip3 install .
 COPY StarCraftII /root/StarCraftII
 COPY smac/smac/env/starcraft2/maps/SMAC_Maps /root/StarCraftII/Maps/SMAC_Maps

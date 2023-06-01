@@ -2,6 +2,7 @@ import copy
 from components.episode_buffer import EpisodeBatch
 from modules.mixers.ddn import DDNMixer
 from modules.mixers.dmix import DMixer
+from modules.mixers.dplex import DPLEXMixer
 import torch as th
 import torch.nn.functional as F
 from torch.optim import RMSprop
@@ -25,6 +26,8 @@ class IQNLearner:
                 self.mixer = DDNMixer(args)
             elif args.mixer == "dmix":
                 self.mixer = DMixer(args)
+            elif args.mixer == "dplex":
+                self.mixer = DPLEXMixer(args)
             else:
                 raise ValueError("Mixer {} not recognised.".format(args.mixer))
             self.params += list(self.mixer.parameters())
@@ -58,6 +61,7 @@ class IQNLearner:
         assert mask.shape == (batch.batch_size, episode_length, 1)
         avail_actions = batch["avail_actions"]
         assert avail_actions.shape == (batch.batch_size, episode_length+1, self.args.n_agents, self.args.n_actions)
+        actions_onehot = batch["actions_onehot"][:, :-1]
 
         # Mix
         if self.mixer is not None:
@@ -89,10 +93,16 @@ class IQNLearner:
 
         # Pick the Q-Values for the actions taken by each agent
         actions_for_quantiles = actions.unsqueeze(4).expand(-1, -1, -1, -1, self.n_quantiles)
-        del actions
         chosen_action_qvals = th.gather(mac_out[:,:-1], dim=3, index=actions_for_quantiles).squeeze(3)  # Remove the action dim
         del actions_for_quantiles
         assert chosen_action_qvals.shape == (batch.batch_size, episode_length, self.args.n_agents, self.n_quantiles)
+        if self.args.mixer == "dplex":
+            assert mac_out.shape == (batch.batch_size, episode_length+1, self.args.n_agents, self.args.n_actions, self.n_quantiles)
+            x_mac_out = mac_out.clone().detach()
+            x_mac_out[avail_actions == 0] = -9999999
+            max_action_qvals, max_action_index = x_mac_out[:, :-1].mean(dim=4).max(dim=3)
+            max_action_index = max_action_index.detach().unsqueeze(3)
+        del actions
 
         # Calculate the Q-Values necessary for the target
         target_mac_out = []
@@ -131,16 +141,39 @@ class IQNLearner:
             # [0] is for max value; [1] is for argmax
             cur_max_actions = target_mac_out.mean(dim=4).max(dim=3, keepdim=True)[1]
             assert cur_max_actions.shape == (batch.batch_size, episode_length, self.args.n_agents, 1)
-            cur_max_actions = cur_max_actions.unsqueeze(4).expand(-1, -1, -1, -1, self.n_target_quantiles)
-            target_max_qvals = th.gather(target_mac_out, 3, cur_max_actions).squeeze(3)
-            del cur_max_actions
+            cur_max_actions_ = cur_max_actions.unsqueeze(4).expand(-1, -1, -1, -1, self.n_target_quantiles)
+            target_max_qvals = th.gather(target_mac_out, 3, cur_max_actions_).squeeze(3)
         del target_mac_out
         assert target_max_qvals.shape == (batch.batch_size, episode_length, self.args.n_agents, self.n_target_quantiles)
 
+        if self.args.mixer == "dplex":
+            cur_max_actions_onehot = th.zeros(cur_max_actions.squeeze(3).shape + (self.args.n_actions,)).cuda()
+            cur_max_actions_onehot = cur_max_actions_onehot.scatter_(3, cur_max_actions, 1)
+
         # Mix
+        q_attend_regs = 0
         if self.mixer is not None:
-            target_max_qvals = self.target_mixer(target_max_qvals, batch["state"][:, 1:], target=True)
-            chosen_action_qvals = self.mixer(chosen_action_qvals, batch["state"][:, :-1], target=False)
+            if self.args.mixer == "dplex":
+                assert target_max_qvals.shape == (batch.batch_size, episode_length, self.args.n_agents, self.n_target_quantiles)
+                # Policy Q
+                ans_chosen, q_attend_regs, head_entropies = \
+                    self.mixer(chosen_action_qvals, batch["state"][:, :-1], target=False, is_v=True)
+                # Additional `actions_onehot`, `max_action_qvals`
+                ans_adv, _, _ = self.mixer(chosen_action_qvals, batch["state"][:, :-1], target=False, actions=actions_onehot,
+                    max_q_i=max_action_qvals, is_v=False)
+                # Q_tot in Eq.12 (of QPLEX paper)
+                chosen_action_qvals = ans_chosen + ans_adv
+                # Target Q
+                target_chosen, _, _ = self.target_mixer(target_max_qvals, batch["state"][:, 1:], target=True, is_v=True)
+                # Additional `actions_onehot`, `max_action_qvals`
+                target_adv, _, _ = self.target_mixer(target_max_qvals, batch["state"][:, 1:], target=True,
+                                                actions=cur_max_actions_onehot,
+                                                max_q_i=target_max_qvals.mean(dim=3), is_v=False)
+                # Q_tot in Eq.12 (of QPLEX paper)
+                target_max_qvals = target_chosen + target_adv
+            else:
+                target_max_qvals = self.target_mixer(target_max_qvals, batch["state"][:, 1:], target=True)
+                chosen_action_qvals = self.mixer(chosen_action_qvals, batch["state"][:, :-1], target=False)
             assert chosen_action_qvals.shape == (batch.batch_size, episode_length, n_quantile_groups, self.n_quantiles)
             assert target_max_qvals.shape == (batch.batch_size, episode_length, n_quantile_groups, self.n_target_quantiles)
 
@@ -186,7 +219,7 @@ class IQNLearner:
         # 0-out the targets that came from padded data
         loss = loss * mask
 
-        loss = loss.sum() / mask.sum()
+        loss = loss.sum() / mask.sum() + q_attend_regs
         assert loss.shape == ()
 
         # Optimise
