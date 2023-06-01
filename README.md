@@ -1,19 +1,30 @@
-# Distributional Value Function Factorization (DFAC) Framework
+# A Unified Framework for Factorizing Distributional Value Functions for Multi-Agent Reinforcement Learning
 
-[![arXiv](https://img.shields.io/badge/arXiv-2102.07936-b31b1b.svg)](https://arxiv.org/abs/2102.07936)<br>
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/dfac-framework-factorizing-the-value-function/smac-on-smac-6h-vs-8z-1)](https://paperswithcode.com/sota/smac-on-smac-6h-vs-8z-1?p=dfac-framework-factorizing-the-value-function)<br>
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/dfac-framework-factorizing-the-value-function/smac-on-smac-3s5z-vs-3s6z-1)](https://paperswithcode.com/sota/smac-on-smac-3s5z-vs-3s6z-1?p=dfac-framework-factorizing-the-value-function)<br>
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/dfac-framework-factorizing-the-value-function/smac-on-smac-mmm2-1)](https://paperswithcode.com/sota/smac-on-smac-mmm2-1?p=dfac-framework-factorizing-the-value-function)<br>
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/dfac-framework-factorizing-the-value-function/smac-on-smac-27m-vs-30m)](https://paperswithcode.com/sota/smac-on-smac-27m-vs-30m?p=dfac-framework-factorizing-the-value-function)<br>
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/dfac-framework-factorizing-the-value-function/smac-on-smac-corridor)](https://paperswithcode.com/sota/smac-on-smac-corridor?p=dfac-framework-factorizing-the-value-function)
 
-This is the official repository that contain the source code for the DFAC paper:
+This is the official repository that contain the source code for the DFAC-Extended paper:
 
-- [[ICML 2021] DFAC Framework: Factorizing the Value Function via Quantile Mixture for Multi-Agent Distributional Q-Learning](http://proceedings.mlr.press/v139/sun21c.html)
+- [JMLR 2023] A Unified Framework for Factorizing Distributional Value Functions for Multi-Agent Reinforcement Learning
 
-If you have any question regarding the paper or code, ask by [submitting an issue](https://github.com/j3soon/dfac/issues).
+> This paper is an extended version of:
+>
+> - [[ICML 2021] DFAC Framework: Factorizing the Value Function via Quantile Mixture for Multi-Agent Distributional Q-Learning](https://github.com/j3soon/dfac)
 
-> An extended version of the paper has been published in the Journal of Machine Learning Research (JMLR) 2023. Please refer to the [dfac-extended](https://github.com/j3soon/dfac-extended) repository for more information.
+If you have any question regarding the paper or code, ask by [submitting an issue](https://github.com/j3soon/dfac-extended/issues).
+
+## Extensions
+
+The main differences between DFAC-Extended (JMLR version) and the original DFAC (ICML version) are:
+
+1. Extend the state-of-the-art value function factorization method, QPLEX, to its DFAC variant, and demonstrate its ability to tackle non-monotonic tasks that cannot be solved in the previous work.
+2. Previously, we only consider a single distributional RL method, IQN, and factorize the joint return distribution with a quantile mixture. We incorporate an additional distributional RL method, C51, into our framework, and show that the joint return distribution can be factorized in a similar way by using convolutions.
+3. An additional section is added to analyze the computational complexity for different shape function implementation choices.
+4. Run additional experiments on a more difficult matrix game and six additional self-designed StarCraft maps to further validate the benefits of our proposed framework.
+5. Highlight the difference between the proposed method and its related works. Furthermore, we discuss new observations and insights of our work, and provide guidance on potential future works.
 
 ## Gameplay Video Preview
 
@@ -29,15 +40,15 @@ Execute the following commands in your Linux terminal to build the docker image:
 
 ```sh
 # Clone the repository
-git clone https://github.com/j3soon/dfac.git
-cd dfac
+git clone https://github.com/j3soon/dfac-extended.git
+cd dfac-extended
 # Download StarCraft 2.4.10
 wget http://blzdistsc2-a.akamaihd.net/Linux/SC2.4.10.zip
 # Extract the files to StarCraftII directory
 unzip -P iagreetotheeula SC2.4.10.zip
 mv SC2.4.10.zip ..
 # Build docker image
-docker build . --build-arg DOCKER_BASE=nvcr.io/nvidia/tensorflow:19.12-tf1-py3 -t j3soon/dfac:1.0
+docker build . --build-arg DOCKER_BASE=nvcr.io/nvidia/tensorflow:19.12-tf1-py3 -t j3soon/dfac-extended:1.0
 ```
 
 Launch a docker container:
@@ -51,7 +62,7 @@ docker run --gpus all \
     -v "$(pwd)"/results:/results \
     -e DISPLAY=$DISPLAY \
     --device /dev/snd \
-    j3soon/dfac:1.0 /bin/bash
+    j3soon/dfac-extended:1.0 /bin/bash
 ```
 
 Run the following command in the docker container for quick testing:
@@ -65,49 +76,25 @@ After finish training, exit the container by `exit`, the container will be autom
 
 The results are stored in `./results`.
 
-> We chose to release the code based on docker for better reproducibility and the ease of use. For installing directly or running the code in virtualenv or conda, you may want to refer to the [Dockerfile](Dockerfile). If you still have trouble setting up the environment, [open an issue](https://github.com/j3soon/dfac/issues) and describe your encountered issue.
+> We chose to release the code based on docker for better reproducibility and the ease of use. For installing directly or running the code in virtualenv or conda, you may want to refer to the [Dockerfile](Dockerfile). If you still have trouble setting up the environment, [open an issue](https://github.com/j3soon/dfac-extended/issues) and describe your encountered issue.
 
 ## Reproducing
 
-The following is the list of commands used for the experiments in the paper:
+The following is the command used for the experiments in the paper:
 
 ```sh
-# 3s5z_vs_3s6z
-python3 src/main.py --config=iql --env-config=sc2 with env_args.map_name=3s5z_vs_3s6z rnn_hidden_dim=512
-python3 src/main.py --config=vdn --env-config=sc2 with env_args.map_name=3s5z_vs_3s6z rnn_hidden_dim=128
-python3 src/main.py --config=qmix --env-config=sc2 with env_args.map_name=3s5z_vs_3s6z rnn_hidden_dim=128
-python3 src/main.py --config=diql --env-config=sc2 with env_args.map_name=3s5z_vs_3s6z rnn_hidden_dim=256
-python3 src/main.py --config=ddn --env-config=sc2 with env_args.map_name=3s5z_vs_3s6z rnn_hidden_dim=512
-python3 src/main.py --config=dmix --env-config=sc2 with env_args.map_name=3s5z_vs_3s6z rnn_hidden_dim=256
-# 6h_vs_8z
-python3 src/main.py --config=iql --env-config=sc2 with env_args.map_name=6h_vs_8z rnn_hidden_dim=128
-python3 src/main.py --config=vdn --env-config=sc2 with env_args.map_name=6h_vs_8z rnn_hidden_dim=128
-python3 src/main.py --config=qmix --env-config=sc2 with env_args.map_name=6h_vs_8z rnn_hidden_dim=256
-python3 src/main.py --config=diql --env-config=sc2 with env_args.map_name=6h_vs_8z rnn_hidden_dim=512
-python3 src/main.py --config=ddn --env-config=sc2 with env_args.map_name=6h_vs_8z rnn_hidden_dim=512
-python3 src/main.py --config=dmix --env-config=sc2 with env_args.map_name=6h_vs_8z rnn_hidden_dim=256
-# MMM2
-python3 src/main.py --config=iql --env-config=sc2 with env_args.map_name=MMM2 rnn_hidden_dim=256
-python3 src/main.py --config=vdn --env-config=sc2 with env_args.map_name=MMM2 rnn_hidden_dim=64
-python3 src/main.py --config=qmix --env-config=sc2 with env_args.map_name=MMM2 rnn_hidden_dim=64
-python3 src/main.py --config=diql --env-config=sc2 with env_args.map_name=MMM2 rnn_hidden_dim=512
-python3 src/main.py --config=ddn --env-config=sc2 with env_args.map_name=MMM2 rnn_hidden_dim=512
-python3 src/main.py --config=dmix --env-config=sc2 with env_args.map_name=MMM2 rnn_hidden_dim=256
-# 27m_vs_30m
-python3 src/main.py --config=iql --env-config=sc2 with env_args.map_name=27m_vs_30m rnn_hidden_dim=256
-python3 src/main.py --config=vdn --env-config=sc2 with env_args.map_name=27m_vs_30m rnn_hidden_dim=64
-python3 src/main.py --config=qmix --env-config=sc2 with env_args.map_name=27m_vs_30m rnn_hidden_dim=64
-python3 src/main.py --config=diql --env-config=sc2 with env_args.map_name=27m_vs_30m rnn_hidden_dim=512
-python3 src/main.py --config=ddn --env-config=sc2 with env_args.map_name=27m_vs_30m rnn_hidden_dim=128
-python3 src/main.py --config=dmix --env-config=sc2 with env_args.map_name=27m_vs_30m rnn_hidden_dim=128
-# corridor
-python3 src/main.py --config=iql --env-config=sc2 with env_args.map_name=corridor rnn_hidden_dim=256
-python3 src/main.py --config=vdn --env-config=sc2 with env_args.map_name=corridor rnn_hidden_dim=128
-python3 src/main.py --config=qmix --env-config=sc2 with env_args.map_name=corridor rnn_hidden_dim=256
-python3 src/main.py --config=diql --env-config=sc2 with env_args.map_name=corridor rnn_hidden_dim=512
-python3 src/main.py --config=ddn --env-config=sc2 with env_args.map_name=corridor rnn_hidden_dim=128
-python3 src/main.py --config=dmix --env-config=sc2 with env_args.map_name=corridor rnn_hidden_dim=64
+python3 src/main.py --config=$ALGO --env-config=sc2 with env_args.map_name=$MAP_NAME rnn_hidden_dim=$HIDDEN_DIM
 ```
+
+The arguments are:
+- `$ALGO`:
+  - Baselines: `{iql, vdn, qmix, qplex}`.
+  - DFAC Variants: `{diql, ddn, dmix, dplex}`.
+- `$MAP_NAME`:
+  - Super Hard Maps: `{3s5z_vs_3s6z, 6h_vs_8z, MMM2, 27m_vs_30m, corridor}`.
+  - Ultra Hard Maps: `{26m_vs_30m, 3s5z_vs_4s6z, 6h_vs_9z, MMM2_7m2M1M_vs_8m4M1M, MMM2_7m2M1M_vs_9m3M1M, corridor_2z_vs_24zg}`.
+- `$HIDDEN_DIM`:
+  - Please refer to Table 6 in the paper for the corresponding hidden dimension setup in each setting.
 
 If you want to modify the algorithm, you can modify the files in `./pymarl` directly, without rebuilding the docker image or restarting the docker container.
 
@@ -120,15 +107,19 @@ The code of DFAC is organized with minimum changes based on [oxwhirl/pymarl](htt
 diff pymarl/src/config/algs/iql.yaml pymarl/src/config/algs/diql.yaml
 diff pymarl/src/config/algs/vdn.yaml pymarl/src/config/algs/ddn.yaml
 diff pymarl/src/config/algs/qmix.yaml pymarl/src/config/algs/dmix.yaml
+diff pymarl/src/config/algs/qplex.yaml pymarl/src/config/algs/dplex.yaml
 # Agent
 diff pymarl/src/learners/q_learner.py pymarl/src/learners/iqn_learner.py
 diff pymarl/src/modules/agents/rnn_agent.py pymarl/src/modules/agents/iqn_rnn_agent.py
 # Mixer
 diff pymarl/src/modules/mixers/vdn.py pymarl/src/modules/mixers/ddn.py
 diff pymarl/src/modules/mixers/qmix.py pymarl/src/modules/mixers/dmix.py
+diff pymarl/src/modules/mixers/dmaq_qatten.py pymarl/src/modules/mixers/dplex.py
 ```
 
-For comparing all modifications based on all used packages, refer to [this comparison link of all modifications](https://github.com/j3soon/dfac/compare/61d2a06..HEAD).
+For comparing all modifications based on all used packages, refer to the following comparison links:
+- [DFAC modifications](https://github.com/j3soon/dfac/compare/61d2a06..HEAD)
+- [DFAC-Extended modifications](https://github.com/j3soon/dfac-extended/compare/5a372eb..HEAD)
 
 ## Developing new Algorithms
 
@@ -144,6 +135,11 @@ For common baselines, you may want to refer to the following package which colle
 
 - [hijkzzz/pymarl2](https://github.com/hijkzzz/pymarl2)
 
+There are also further improvements in the SMAC benchmark:
+
+- [oxwhirl/smacv2](https://github.com/oxwhirl/smacv2)
+- [osilab-kaist/smac_exp](https://github.com/osilab-kaist/smac_exp)
+
 ### Inspect the Training Progress
 
 You can inspect the training progress in real-time by the following command:
@@ -154,7 +150,9 @@ tensorboard --logdir=./results
 
 ## Citing DFAC
 
-If you used the provided code or want to cite our work, please cite the [DFAC paper](http://proceedings.mlr.press/v139/sun21c.html).
+If you used the provided code or want to cite our work, please cite the DFAC-Extended paper. The BibTex will be added once the paper is listed on JMLR.
+
+Meanwhile, please cite the original [DFAC paper](http://proceedings.mlr.press/v139/sun21c.html).
 
 BibTex format:
 
@@ -181,7 +179,8 @@ You will also want to [cite the SMAC paper](https://github.com/oxwhirl/smac#citi
 To maintain reproducibility, we freezed the following packages with the commit used in the paper. The licenses of these packages are listed below:
 
 - [oxwhirl/sacred](https://github.com/oxwhirl/sacred) (at commit 13f04ad) is released under the [MIT License](https://github.com/oxwhirl/sacred/blob/master/LICENSE.txt)
-- [oxwhirl/smac](https://github.com/oxwhirl/smac) (at commit 8d2c42b) is released under the [MIT License](https://github.com/oxwhirl/smac/blob/master/LICENSE)
+- [oxwhirl/smac](https://github.com/oxwhirl/smac) (at commit 456d133) is released under the [MIT License](https://github.com/oxwhirl/smac/blob/master/LICENSE)
 - [oxwhirl/pymarl](https://github.com/oxwhirl/pymarl) (at commit dd92936) is released under the [Apache-2.0 License](https://github.com/oxwhirl/pymarl/blob/master/LICENSE)
+- [wjh720/QPLEX](https://github.com/wjh720/QPLEX) (at commit b672407) is released under the [Apache-2.0 License](https://github.com/wjh720/QPLEX/blob/master/pymarl-master/LICENSE)
 
 Further changes based on the packages above are release under the [Apache-2.0 License](LICENSE).
