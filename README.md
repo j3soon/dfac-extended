@@ -8,7 +8,7 @@
 
 This is the official repository that contain the source code for the DFAC-Extended paper:
 
-- [JMLR 2023] A Unified Framework for Factorizing Distributional Value Functions for Multi-Agent Reinforcement Learning
+- [[JMLR 2023] A Unified Framework for Factorizing Distributional Value Functions for Multi-Agent Reinforcement Learning](https://jmlr.org/papers/v24/22-0630.html)
 
 > This paper is an extended version of:
 >
@@ -150,9 +150,7 @@ tensorboard --logdir=./results
 
 ## Citing DFAC
 
-If you used the provided code or want to cite our work, please cite the DFAC-Extended paper. The BibTex will be added once the paper is listed on JMLR.
-
-Meanwhile, please cite the original [DFAC paper](http://proceedings.mlr.press/v139/sun21c.html).
+If you used the provided code or want to cite our work, please cite the original DFAC paper and the DFAC-Extended paper.
 
 BibTex format:
 
@@ -169,6 +167,19 @@ BibTex format:
   publisher =    {PMLR},
   pdf = 	 {http://proceedings.mlr.press/v139/sun21c/sun21c.pdf},
   url = 	 {http://proceedings.mlr.press/v139/sun21c.html},
+}
+```
+
+```
+@article{JMLR:v24:22-0630,
+  author  = {Wei-Fang Sun and Cheng-Kuang Lee and Simon See and Chun-Yi Lee},
+  title   = {A Unified Framework for Factorizing Distributional Value Functions for Multi-Agent Reinforcement Learning},
+  journal = {Journal of Machine Learning Research},
+  year    = {2023},
+  volume  = {24},
+  number  = {220},
+  pages   = {1--32},
+  url     = {http://jmlr.org/papers/v24/22-0630.html}
 }
 ```
 
